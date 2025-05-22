@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { config } from 'dotenv';
 import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
+import path from 'path';
 import { setupRoutes } from './routes';
 import { setupWebSocket } from './websocket';
 import { setupMetrics } from './metrics';
@@ -24,7 +25,9 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
+}));
 app.use(morgan('combined'));
 app.use(express.json());
 app.use(rateLimiter);
@@ -32,7 +35,7 @@ app.use(rateLimiter);
 // Configurar métricas
 setupMetrics(app);
 
-// Configurar rotas
+// Configurar rotas da API
 setupRoutes(app);
 
 // Configurar Swagger
@@ -41,6 +44,19 @@ app.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
+
+// Servir arquivos estáticos do frontend
+if (process.env.NODE_ENV === 'production') {
+  // Em produção, servir os arquivos compilados do frontend
+  app.use(express.static(path.join(__dirname, 'frontend')));
+  
+  // Para qualquer rota não encontrada na API, servir o index.html
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/socket.io')) {
+      res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+    }
+  });
+}
 
 // Configurar WebSocket
 setupWebSocket(server);
