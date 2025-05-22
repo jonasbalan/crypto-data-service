@@ -61,7 +61,10 @@ async function initializeVectorDB(): Promise<void> {
   
   if (pineconeApiKey) {
     try {
-      pineconeClient = new Pinecone({ apiKey: pineconeApiKey });
+      pineconeClient = new Pinecone({ 
+        apiKey: pineconeApiKey,
+        environment: process.env.PINECONE_ENVIRONMENT || 'us-west1-gcp'
+      });
       const indexName = process.env.PINECONE_INDEX || 'crypto-vectors';
       
       // Tentar obter o índice - se não existir, será criado
@@ -72,12 +75,8 @@ async function initializeVectorDB(): Promise<void> {
         logger.info(`Criando índice Pinecone: ${indexName}`);
         await pineconeClient.createIndex({
           name: indexName,
-          spec: {
-            serverless: {
-              cloud: 'aws',
-              region: 'us-west-2'
-            }
-          }
+          dimension: 1536,
+          metric: 'cosine'
         });
       }
       

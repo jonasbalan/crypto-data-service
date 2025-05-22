@@ -173,7 +173,7 @@ router.post('/store', async (req: Request, res: Response): Promise<Response> => 
     }
     
     // Criar embedding e armazenar no banco de dados vetorial
-    const vectorId = await createDataEmbedding(data, type as DataType, symbol);
+    const vectorId = await createDataEmbedding(data, type as "price" | "transaction" | "social" | "technical", symbol);
     
     // Responder com confirmação
     return res.status(201).json({ 
@@ -327,9 +327,38 @@ router.get('/debug/html', async (req: Request, res: Response): Promise<Response>
             font-size: 0.9em;
             color: #666;
           }
+          .data-sources {
+            background: #e3f2fd;
+            border-left: 5px solid #1976d2;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            border-radius: 6px;
+          }
+          .data-sources h3 {
+            margin-top: 0;
+            color: #1976d2;
+          }
+          .data-sources ul {
+            margin: 0;
+            padding-left: 20px;
+          }
         </style>
       </head>
       <body>`;
+    
+    // Seção de fontes de dados
+    html += `
+      <div class="data-sources">
+        <h3>Fontes de Dados Utilizadas</h3>
+        <ul>
+          <li><strong>Exchanges:</strong> Binance, outros WebSockets de exchanges</li>
+          <li><strong>Blockchains:</strong> Bitcoin, Ethereum, Solana, etc.</li>
+          <li><strong>APIs de Análise:</strong> CoinGecko, Solscan, Dexscreener</li>
+          <li><strong>Redes Sociais:</strong> Twitter/X</li>
+          <li><strong>Dados Internos:</strong> MongoDB, Redis</li>
+        </ul>
+      </div>
+    `;
     
     html += `<h1>Debug Milvus - Coleções</h1>`;
     html += `<p>Timestamp: ${new Date().toLocaleString()}</p>`;

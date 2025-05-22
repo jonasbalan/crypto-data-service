@@ -1,31 +1,50 @@
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: crypto-mongodb
+  app:
+    image: crypto-data-service
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
+      - "3000:3000"
+    depends_on:
+      - redis
+      - milvus
     environment:
-      - MONGO_INITDB_DATABASE=crypto-data
-    networks:
-      - crypto-network
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - MILVUS_HOST=milvus
+      - MILVUS_PORT=19530
+      - MONGO_URI=mongodb://localhost:27017/crypto
+    restart: unless-stopped
 
   redis:
-    image: redis:latest
-    container_name: crypto-redis
+    image: redis:7.0
     ports:
       - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
     volumes:
       - redis_data:/data
-    networks:
-      - crypto-network
+    restart: unless-stopped
+
+  milvus:
+    image: milvusdb/milvus:v2.3.3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - etcd
+      - minio
+    environment:
+      - ETCD_ENDPOINTS=etcd:2379
+      - MINIO_ADDRESS=minio:9000
+    volumes:
+      - milvus_data:/var/lib/milvus
+    restart: unless-stopped
 
   etcd:
-    image: quay.io/coreos/etcd:v3.5.0
-    container_name: crypto-etcd
+    image: quay.io/coreos/etcd:v3.5.5
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -35,58 +54,54 @@ services:
       - etcd_data:/etcd
     command:
       - etcd
-      - --advertise-client-urls=http://etcd:2379
+      - --name=etcd0
+      - --data-dir=/etcd/data.etcd
       - --listen-client-urls=http://0.0.0.0:2379
-      - --data-dir=/etcd
-    networks:
-      - crypto-network
+      - --advertise-client-urls=http://0.0.0.0:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://0.0.0.0:2380
+      - --initial-cluster=etcd0=http://0.0.0.0:2380
+      - --initial-cluster-token=etcd-cluster
+      - --initial-cluster-state=new
+      - --auto-compaction-retention=1
+      - --snapshot-count=5000
+    restart: unless-stopped
 
   minio:
-    image: minio/minio:latest
-    container_name: crypto-minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
     volumes:
       - minio_data:/data
-    command: server /data --console-address ":9001"
+    command: minio server /data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
-    networks:
-      - crypto-network
+    restart: unless-stopped
 
-  vector-db:
-    image: milvusdb/milvus:latest
-    container_name: crypto-vector-db
-    command: ["milvus", "run", "standalone"]
+  ollama:
+    image: ollama/ollama:latest
     ports:
-      - "19530:19530"
-      - "9091:9091"
+      - "11434:11434"
     volumes:
-      - vector_db_data:/var/lib/milvus
-    environment:
-      - ETCD_ENDPOINTS=etcd:2379
-      - ETCD_USE_EMBED=false
-      - ETCD_USE_SSL=false
-      - MINIO_ADDRESS=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-    depends_on:
-      - etcd
-      - minio
-    networks:
-      - crypto-network
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  milvus_data:
+  etcd_data:
+  minio_data:
+  ollama_data:
 
 networks:
   crypto-network:
-    driver: bridge
-
-volumes:
-  mongodb_data:
-  redis_data:
-  vector_db_data:
-  etcd_data:
-  minio_data: 
+    driver: bridge 

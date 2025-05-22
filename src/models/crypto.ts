@@ -67,6 +67,9 @@ export interface ICryptoAsset extends Document {
   lastUpdated: Date;
   createdAt: Date;
   vectorId?: string; // ID do vetor no banco de dados vetorial
+  exchange?: string;
+  circulatingSupply?: number;
+  totalSupply?: number;
 }
 
 // Schema para preço da criptomoeda
@@ -135,7 +138,10 @@ const CryptoAssetSchema = new Schema<ICryptoAsset>({
   liquidityData: [LiquidityDataSchema],
   lastUpdated: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
-  vectorId: { type: String }
+  vectorId: { type: String },
+  exchange: { type: String },
+  circulatingSupply: { type: Number },
+  totalSupply: { type: Number }
 }, {
   timestamps: true
 });
@@ -144,6 +150,7 @@ const CryptoAssetSchema = new Schema<ICryptoAsset>({
 CryptoAssetSchema.index({ symbol: 1, chainId: 1 }, { unique: true });
 CryptoAssetSchema.index({ currentPrice: 1 });
 CryptoAssetSchema.index({ "priceHistory.timestamp": 1 });
+CryptoAssetSchema.index({ exchange: 1 });
 
 // Criar e exportar o modelo
 export const CryptoAsset = mongoose.model<ICryptoAsset>('CryptoAsset', CryptoAssetSchema); 

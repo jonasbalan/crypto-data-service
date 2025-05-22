@@ -72,15 +72,13 @@ export async function storeVectorInPinecone(
     const index = pinecone.Index(indexName);
     
     // Inserir vetor no índice
-    await index.upsert({
-      vectors: [
-        {
-          id,
-          values: vector,
-          metadata
-        }
-      ]
-    });
+    await index.upsert([
+      {
+        id,
+        values: vector,
+        metadata
+      }
+    ]);
     
     logger.debug(`Vetor armazenado no Pinecone: ${id}`);
   } catch (error) {

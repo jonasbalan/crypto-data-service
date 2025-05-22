@@ -1,18 +1,24 @@
 # Dependências
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
 
-# Arquivos de build
-dist/
-build/
-*.tsbuildinfo
-
-# Arquivos de ambiente
+# Ambiente
 .env
 .env.local
 .env.*.local
+.env.development
+.env.test
+.env.production
+
+# Build
+dist/
+build/
+out/
+.next/
 
 # Logs
 logs/
@@ -21,18 +27,74 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Sistema operacional
+# Sistema
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# IDEs e editores
+# IDEs e Editores
 .idea/
 .vscode/
 *.swp
 *.swo
 *.swn
 *.bak
+*.sublime-workspace
+*.sublime-project
 
-# Arquivos temporários
+# Testes
+coverage/
+.nyc_output/
+junit.xml
+
+# Cache
+.cache/
+.npm/
+.eslintcache
+.stylelintcache
+
+# Arquivos Temporários
 tmp/
-temp/ 
+temp/
+*.tmp
+*.temp
+
+# Arquivos de Backup
+*.bak
+*.backup
+*~
+
+# Arquivos de Configuração Local
+config.local.js
+config.local.json
+
+# Arquivos de Dados
+*.sqlite
+*.sqlite3
+*.db
+
+# Arquivos de Backup do Banco
+backups/
+*.dump
+*.sql
+
+# Arquivos de Certificado
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.p12
+*.pfx
+
+# Arquivos de Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env/
+.venv/ 

@@ -446,7 +446,7 @@ function analyzePriceTrend(asset: any): any {
   
   // Calcular variações
   const currentPrice = priceHistory[0].price;
-  const price7dAgo = priceHistory.find(ph => 
+  const price7dAgo = priceHistory.find((ph: { timestamp: number }) =>
     new Date(ph.timestamp).getTime() <= 
     new Date().getTime() - 7 * 24 * 60 * 60 * 1000
   )?.price || priceHistory[priceHistory.length - 1].price;
