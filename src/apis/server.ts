@@ -173,10 +173,10 @@ function setupSocketIO(io: Server): void {
 async function setupRedisSubscriber(): Promise<void> {
   try {
     // Criar cliente Redis dedicado para subscrição
-    const redisSubscriber = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    const redisSubscriber = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
     
     // Criar cliente Redis separado para publicação
-    const redisPublisher = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    const redisPublisher = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
     
     // Assinar em canais relevantes
     await redisSubscriber.subscribe('crypto:price:update');

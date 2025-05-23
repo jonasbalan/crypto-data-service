@@ -149,7 +149,7 @@ const SentimentChart: React.FC<SentimentChartProps> = ({ data, loading }) => {
   return (
     <Box sx={{ width: '100%' }}>
       <Grid container spacing={3}>
-        <Grid xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
             <Typography variant="h6" gutterBottom>
               Sentimento Geral
@@ -172,12 +172,12 @@ const SentimentChart: React.FC<SentimentChartProps> = ({ data, loading }) => {
             </Typography>
           </Paper>
         </Grid>
-        <Grid xs={12} md={8}>
+        <Grid size={{ xs: 12, md: 8 }}>
           <Paper sx={{ p: 2 }}>
             <Bar data={sourceChartData} options={sourceChartOptions} />
           </Paper>
         </Grid>
-        <Grid xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Paper sx={{ p: 2 }}>
             <Radar data={keywordChartData} options={keywordChartOptions} />
           </Paper>

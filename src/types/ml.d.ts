@@ -1,22 +1,21 @@
 declare module 'ml-regression' {
   export class PolynomialRegression {
     constructor(x: number[], y: number[], degree: number);
-    predict(x: number): number;
-    score(coefficients?: number[]): number;
-    readonly coefficients: number[];
-    readonly degree: number;
+    predict(x: number | number[]): number | number[];
     toString(precision?: number): string;
     toLaTeX(precision?: number, options?: any): string;
+    score(x: number[], y: number[]): { r2: number, chi2: number, rmsd: number };
   }
 
   export class SimpleLinearRegression {
     constructor(x: number[], y: number[]);
-    predict(x: number): number;
-    score(): number;
-    slope: number;
-    intercept: number;
+    predict(x: number | number[]): number | number[];
+    computeX(y: number): number;
     toString(precision?: number): string;
     toLaTeX(precision?: number): string;
+    score(x: number[], y: number[]): { r2: number, chi2: number, rmsd: number };
+    slope: number;
+    intercept: number;
   }
 }
 
@@ -58,4 +57,50 @@ declare module 'ml-matrix' {
     clone(): Matrix;
     toJSON(): { rows: number, columns: number, data: number[][] };
   }
+}
+
+declare module '*.avif' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.bmp' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.gif' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.jpg' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.jpeg' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.png' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.webp' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.svg' {
+  import * as React from 'react';
+
+  export const ReactComponent: React.FunctionComponent<
+    React.SVGProps<SVGSVGElement> & { title?: string }
+  >;
+
+  const src: string;
+  export default src;
 } 

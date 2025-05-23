@@ -29,6 +29,14 @@ export interface SentimentSummary {
   timestamp: string;
 }
 
+export interface TrendingCoin {
+  symbol: string;
+  sentiment: 'bullish' | 'bearish' | 'neutral';
+  score: number;
+  volume24h: number;
+  change24h: number;
+}
+
 // Cliente Axios configurado
 const api = axios.create({
   baseURL: '/api',
@@ -60,9 +68,9 @@ export const sentimentApi = {
   },
 
   // Obter criptomoedas em tendência com base na análise de sentimento
-  getTrending: async (): Promise<string[]> => {
+  getTrending: async (): Promise<TrendingCoin[]> => {
     try {
-      const response = await api.get<string[]>('/sentiment/trending');
+      const response = await api.get<TrendingCoin[]>('/sentiment/trending');
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar criptomoedas em tendência:', error);

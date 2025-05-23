@@ -5,17 +5,19 @@ import analysisRoutes from './apis/routes/analysis';
 import realtimeRoutes from './apis/routes/realtime';
 import exchangeRoutes from './apis/routes/exchange';
 import predictionRoutes from './apis/routes/prediction';
+import sentimentRoutes from './routes/sentimentRoutes';
 import { logger } from './utils/logger';
 
 export const setupRoutes = (app: Express): void => {
   try {
-    // Configurar rotas
+    // Configurar rotas principais
     app.use('/api/health', healthCheckRoutes);
     app.use('/api/vector', vectorRoutes);
     app.use('/api/analysis', analysisRoutes);
     app.use('/api/realtime', realtimeRoutes);
     app.use('/api/exchange', exchangeRoutes);
     app.use('/api/prediction', predictionRoutes);
+    app.use('/api/sentiment', sentimentRoutes);
     
     // Rota de fallback
     app.use('*', (req, res) => {

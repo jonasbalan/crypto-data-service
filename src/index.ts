@@ -15,6 +15,7 @@ import { rateLimiter } from './middleware/rateLimiter';
 import { milvusService } from './database/milvus';
 import { swaggerSpec } from './config/swagger';
 import { ollamaService } from './services/ollamaService';
+import { databaseService } from './database/databaseService';
 
 // Carregar variáveis de ambiente
 config();
@@ -64,14 +65,50 @@ setupWebSocket(server);
 // Middleware de erro
 app.use(errorHandler);
 
-// Inicializar Milvus
-const initializeMilvus = async () => {
+// Inicialização do servidor
+const init = async () => {
   try {
-    await milvusService.connect();
-    await milvusService.createCollection();
-    logger.info('Milvus inicializado com sucesso');
+    // Iniciar servidor
+    server.listen(port, () => {
+      logger.info(`Servidor rodando na porta ${port}`);
+    });
+
+    // Inicializar serviços após o servidor estar rodando
+    // Separar cada inicialização em seu próprio try/catch
+    try {
+      // Inicializar Milvus
+      if (process.env.SKIP_DATABASE_CONNECTION === 'true') {
+        logger.info('SKIP_DATABASE_CONNECTION está ativado, simulando inicialização do Milvus');
+      } else {
+        try {
+          await milvusService.connect();
+          await milvusService.createCollection();
+        } catch (error) {
+          logger.error('Erro ao inicializar Milvus, continuando sem o Milvus:', error);
+        }
+      }
+    } catch (error) {
+      logger.error('Erro geral ao inicializar Milvus:', error);
+    }
+
+    try {
+      // Inicializar Ollama
+      await initializeOllama();
+    } catch (error) {
+      logger.error('Erro ao inicializar Ollama:', error);
+    }
+
+    try {
+      // Inicializar bancos de dados
+      await databaseService.initializeDatabase();
+    } catch (error) {
+      logger.error('Erro ao inicializar bancos de dados:', error);
+    }
+
+    logger.info('Inicialização do servidor completa. Serviço pronto para uso!');
+
   } catch (error) {
-    logger.error('Erro ao inicializar Milvus:', error);
+    logger.error('Erro ao inicializar servidor:', error);
     process.exit(1);
   }
 };
@@ -90,61 +127,5 @@ const initializeOllama = async () => {
   }
 };
 
-// Iniciar servidor
-if (process.env.NODE_ENV !== 'test') {
-  server.listen(port, async () => {
-    logger.info(`Servidor rodando na porta ${port}`);
-    
-    // Verificar se devemos pular a conexão com bancos de dados
-    if (process.env.SKIP_DATABASE_CONNECTION === 'true') {
-      logger.info('SKIP_DATABASE_CONNECTION está ativado, ignorando conexões com bancos de dados');
-    }
-    // Inicializar Milvus apenas em produção
-    else if (process.env.NODE_ENV === 'production') {
-      try {
-        await initializeMilvus();
-      } catch (error) {
-        logger.error('Erro ao inicializar Milvus, continuando sem o Milvus:', error);
-      }
-      try {
-        await initializeOllama();
-      } catch (error) {
-        logger.error('Erro ao inicializar Ollama, continuando sem o Ollama:', error);
-      }
-      
-      // Iniciar sincronização com a Binance
-      try {
-        const { syncBinanceAssets, startAllPriceStreams } = require('./services/exchanges/binanceService');
-        logger.info('Iniciando sincronização com a Binance...');
-        
-        // Sincronizar ativos primeiro
-        await syncBinanceAssets();
-        
-        // Iniciar streams após 5 segundos (para evitar sobrecarga)
-        setTimeout(async () => {
-          try {
-            await startAllPriceStreams();
-            logger.info('Streams da Binance iniciados com sucesso');
-            
-            // Iniciar treinamento de modelos de ML após 30 segundos
-            setTimeout(async () => {
-              try {
-                const { initializeModels } = require('./services/ml/modelBootstrap');
-                await initializeModels();
-                logger.info('Inicialização de modelos de ML concluída');
-              } catch (error) {
-                logger.error('Erro ao inicializar modelos de ML:', error);
-              }
-            }, 30000);
-          } catch (error) {
-            logger.error('Erro ao iniciar streams da Binance:', error);
-          }
-        }, 5000);
-      } catch (error) {
-        logger.error('Erro ao iniciar integração com a Binance:', error);
-      }
-    } else {
-      logger.info('Executando em modo de desenvolvimento, ignorando conexão com Milvus e Ollama');
-    }
-  });
-} 
+// Iniciar aplicação
+init();

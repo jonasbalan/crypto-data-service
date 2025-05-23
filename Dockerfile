@@ -30,6 +30,15 @@ RUN mkdir -p logs && chmod 777 logs
 
 # Configurar usuário não-root
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Configurar variáveis de ambiente
+ENV NODE_ENV=development
+ENV REDIS_URL=redis://redis:6379
+ENV SKIP_DATABASE_CONNECTION=true
+ENV OLLAMA_API_URL=http://ollama:11434
+ENV EMBEDDING_SERVICE=ollama
+ENV OLLAMA_MODEL=llama2
+
 USER appuser
 
 # Expor porta

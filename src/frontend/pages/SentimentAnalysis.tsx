@@ -9,11 +9,13 @@ import {
   Card,
   CardContent,
   Divider,
-  Alert,
-  AlertTitle
+  Fab
 } from '@mui/material';
+import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { sentimentApi, SentimentResult, SentimentSummary } from '../api/sentimentApi';
 import SentimentChart from '../components/charts/SentimentChart';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorDisplay from '../components/ErrorDisplay';
 
 // Lista de símbolos de criptomoedas populares
 const popularCoins = ['BTC', 'ETH', 'XRP', 'SOL', 'ADA', 'DOT', 'DOGE', 'AVAX', 'MATIC', 'LINK'];
@@ -73,13 +75,17 @@ const SentimentAnalysis: React.FC = () => {
     }
   };
 
+  if (loading && !sentimentData) {
+    return <LoadingSpinner message="Analisando sentimento do mercado..." fullHeight />;
+  }
+
   return (
-    <Box sx={{ py: 2 }}>
+    <Box sx={{ py: 2, position: 'relative' }}>
       <Typography variant="h4" gutterBottom>
         Análise de Sentimento de Mercado
       </Typography>
       
-      <Box sx={{ display: 'flex', mb: 4, gap: 2 }}>
+      <Box sx={{ display: 'flex', mb: 4, gap: 2, flexWrap: 'wrap' }}>
         <Autocomplete
           value={symbol}
           onChange={(_, newValue) => newValue && setSymbol(newValue)}
@@ -92,44 +98,47 @@ const SentimentAnalysis: React.FC = () => {
               fullWidth 
             />
           }
-          sx={{ width: 300 }}
+          sx={{ width: { xs: '100%', sm: 300 } }}
           freeSolo
         />
         <Button 
           variant="contained" 
           onClick={handleSearch}
           disabled={loading || !symbol}
+          sx={{ minWidth: 120 }}
         >
           {loading ? <CircularProgress size={24} /> : 'Analisar'}
         </Button>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          <AlertTitle>Erro</AlertTitle>
-          {error}
-        </Alert>
+        <ErrorDisplay 
+          error={error} 
+          onRetry={() => fetchSentimentData(symbol)}
+          title="Erro na análise de sentimento"
+        />
       )}
 
-      {!loading && sentimentData && (
+      {sentimentData && (
         <>
           <SentimentChart data={sentimentData} loading={loading} />
           
           {summaryData && (
-            <Card sx={{ mt: 4 }}>
-              <CardContent>
+            <Card sx={{ mt: 4, boxShadow: 3 }}>
+              <CardContent sx={{ p: 3 }}>
                 <Typography variant="h5" gutterBottom>
                   Recomendação de Investimento
                 </Typography>
-                <Divider sx={{ mb: 2 }} />
+                <Divider sx={{ mb: 3 }} />
                 
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
                   <Typography 
                     variant="h3" 
                     sx={{ 
                       color: getRecommendationColor(summaryData.overallRecommendation),
                       fontWeight: 'bold',
-                      textTransform: 'uppercase'
+                      textTransform: 'uppercase',
+                      mb: 1
                     }}
                   >
                     {summaryData.overallRecommendation}
@@ -139,23 +148,50 @@ const SentimentAnalysis: React.FC = () => {
                   </Typography>
                 </Box>
                 
-                <Typography variant="body1" paragraph>
+                <Typography variant="body1" paragraph sx={{ textAlign: 'center', mb: 3 }}>
                   {summaryData.reasonSummary}
                 </Typography>
                 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                  <Typography variant="body2">
-                    Score de Sentimento: <strong>{summaryData.sentimentScore.toFixed(2)}</strong>
-                  </Typography>
-                  <Typography variant="body2">
-                    Score Técnico: <strong>{summaryData.technicalScore.toFixed(2)}</strong>
-                  </Typography>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-around', 
+                  mt: 3,
+                  flexWrap: 'wrap',
+                  gap: 2
+                }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Score de Sentimento
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold">
+                      {summaryData.sentimentScore.toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Score Técnico
+                    </Typography>
+                    <Typography variant="h6" fontWeight="bold">
+                      {summaryData.technicalScore.toFixed(2)}
+                    </Typography>
+                  </Box>
                 </Box>
               </CardContent>
             </Card>
           )}
         </>
       )}
+
+      {/* Botão flutuante para atualizar */}
+      <Fab
+        color="primary"
+        aria-label="refresh"
+        sx={{ position: 'fixed', bottom: 16, right: 16 }}
+        onClick={() => fetchSentimentData(symbol)}
+        disabled={loading}
+      >
+        <RefreshIcon />
+      </Fab>
     </Box>
   );
 };

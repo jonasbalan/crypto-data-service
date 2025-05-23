@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Typography, 
   Box, 
-  Grid, 
   Paper, 
   Card, 
   CardContent, 
@@ -12,35 +11,96 @@ import {
   ListItem,
   ListItemText,
   ListItemIcon,
-  Divider
+  Divider,
+  Grid,
+  Chip,
+  Avatar,
+  LinearProgress
 } from '@mui/material';
 import { 
   TrendingUp as TrendingUpIcon,
   ShowChart as ShowChartIcon,
   Insights as InsightsIcon,
-  Memory as MemoryIcon
+  Memory as MemoryIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorDisplay from '../components/ErrorDisplay';
+import { sentimentApi, TrendingCoin as ApiTrendingCoin } from '../api/sentimentApi';
+
+interface SystemStatus {
+  name: string;
+  status: 'online' | 'offline' | 'warning';
+  uptime: string;
+  responseTime?: number;
+}
+
+interface TrendingCoin {
+  symbol: string;
+  sentiment: 'bullish' | 'bearish' | 'neutral';
+  change: string;
+  price?: number;
+  volume?: number;
+}
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [trendingCoins, setTrendingCoins] = useState<TrendingCoin[]>([]);
+  const [systemStatus, setSystemStatus] = useState<SystemStatus[]>([
+    { name: 'API REST', status: 'online', uptime: '99.98%', responseTime: 45 },
+    { name: 'WebSockets', status: 'online', uptime: '99.5%', responseTime: 12 },
+    { name: 'Banco de Dados', status: 'online', uptime: '100%', responseTime: 8 },
+    { name: 'Ollama', status: 'warning', uptime: '98.7%', responseTime: 120 },
+    { name: 'Cache Redis', status: 'online', uptime: '99.9%', responseTime: 3 }
+  ]);
 
-  // Dados simulados para o dashboard
-  const systemStatus = [
-    { name: 'API REST', status: 'Online', uptime: '99.98%' },
-    { name: 'WebSockets', status: 'Online', uptime: '99.5%' },
-    { name: 'Banco de Dados', status: 'Online', uptime: '100%' },
-    { name: 'Ollama', status: 'Online', uptime: '98.7%' },
-    { name: 'Cache Redis', status: 'Online', uptime: '99.9%' }
-  ];
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-  // Moedas em tendência
-  const trendingCoins = [
-    { symbol: 'BTC', sentiment: 'bullish', change: '+5.2%' },
-    { symbol: 'ETH', sentiment: 'bullish', change: '+3.8%' },
-    { symbol: 'SOL', sentiment: 'neutral', change: '+0.5%' },
-    { symbol: 'XRP', sentiment: 'bearish', change: '-2.1%' }
-  ];
+  const loadDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Verificar status da API
+      const healthResponse = await fetch('/api/health');
+      if (!healthResponse.ok) {
+        throw new Error('API não está respondendo');
+      }
+
+      // Buscar criptomoedas em tendência
+      try {
+        const trending = await sentimentApi.getTrending();
+        const trendingData: TrendingCoin[] = trending.map((coin: ApiTrendingCoin) => ({
+          symbol: coin.symbol,
+          sentiment: coin.sentiment,
+          change: `${coin.change24h > 0 ? '+' : ''}${coin.change24h.toFixed(1)}%`,
+          price: undefined, // Será definido posteriormente se necessário
+          volume: coin.volume24h
+        }));
+        setTrendingCoins(trendingData);
+      } catch (trendingError) {
+        console.warn('Erro ao buscar trending coins:', trendingError);
+        // Usar dados simulados se a API falhar
+        setTrendingCoins([
+          { symbol: 'BTC', sentiment: 'bullish', change: '+5.2%', price: 45000 },
+          { symbol: 'ETH', sentiment: 'bullish', change: '+3.8%', price: 3200 },
+          { symbol: 'SOL', sentiment: 'neutral', change: '+0.5%', price: 98 },
+          { symbol: 'XRP', sentiment: 'bearish', change: '-2.1%', price: 0.52 }
+        ]);
+      }
+    } catch (err: any) {
+      setError(`Erro ao carregar dados: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Navegar para as seções
   const navigateToSection = (path: string) => {
@@ -57,6 +117,42 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Função para obter ícone de status
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'online': return <CheckCircleIcon color="success" />;
+      case 'offline': return <ErrorIcon color="error" />;
+      case 'warning': return <WarningIcon color="warning" />;
+      default: return <CheckCircleIcon />;
+    }
+  };
+
+  // Função para obter cor do response time
+  const getResponseTimeColor = (responseTime: number) => {
+    if (responseTime < 50) return 'success';
+    if (responseTime < 100) return 'warning';
+    return 'error';
+  };
+
+  if (loading) {
+    return <LoadingSpinner message="Carregando dashboard..." fullHeight />;
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ py: 2 }}>
+        <Typography variant="h4" gutterBottom>
+          Dashboard
+        </Typography>
+        <ErrorDisplay 
+          error={error} 
+          onRetry={loadDashboardData}
+          title="Erro ao carregar dashboard"
+        />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ py: 2 }}>
       <Typography variant="h4" gutterBottom>
@@ -65,11 +161,13 @@ const Dashboard: React.FC = () => {
 
       {/* Cards para navegação rápida */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <InsightsIcon color="primary" sx={{ fontSize: 40, mr: 1 }} />
+                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                  <InsightsIcon />
+                </Avatar>
                 <Typography variant="h6">
                   Análise de Sentimento
                 </Typography>
@@ -79,18 +177,20 @@ const Dashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" onClick={() => navigateToSection('/sentiment')}>
+              <Button size="small" variant="contained" onClick={() => navigateToSection('/sentiment')}>
                 Acessar
               </Button>
             </CardActions>
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <ShowChartIcon color="primary" sx={{ fontSize: 40, mr: 1 }} />
+                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+                  <ShowChartIcon />
+                </Avatar>
                 <Typography variant="h6">
                   Análise Técnica
                 </Typography>
@@ -100,18 +200,20 @@ const Dashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" onClick={() => navigateToSection('/technical')}>
+              <Button size="small" variant="contained" onClick={() => navigateToSection('/technical')}>
                 Acessar
               </Button>
             </CardActions>
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card sx={{ height: '100%', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <TrendingUpIcon color="primary" sx={{ fontSize: 40, mr: 1 }} />
+                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                  <TrendingUpIcon />
+                </Avatar>
                 <Typography variant="h6">
                   Previsão de Preços
                 </Typography>
@@ -121,18 +223,20 @@ const Dashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Button size="small" onClick={() => navigateToSection('/prediction')}>
+              <Button size="small" variant="contained" onClick={() => navigateToSection('/prediction')}>
                 Acessar
               </Button>
             </CardActions>
           </Card>
         </Grid>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Card sx={{ height: '100%', opacity: 0.7 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <MemoryIcon color="primary" sx={{ fontSize: 40, mr: 1 }} />
+                <Avatar sx={{ bgcolor: 'grey.500', mr: 2 }}>
+                  <MemoryIcon />
+                </Avatar>
                 <Typography variant="h6">
                   Integração de APIs
                 </Typography>
@@ -152,28 +256,49 @@ const Dashboard: React.FC = () => {
 
       {/* Status do sistema e criptomoedas em tendência */}
       <Grid container spacing={3}>
-        <Grid xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
               Status do Sistema
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <List>
               {systemStatus.map((system) => (
-                <ListItem key={system.name}>
+                <ListItem key={system.name} sx={{ px: 0 }}>
                   <ListItemIcon>
-                    <Box 
-                      sx={{ 
-                        width: 12, 
-                        height: 12, 
-                        borderRadius: '50%', 
-                        bgcolor: system.status === 'Online' ? 'success.main' : 'error.main' 
-                      }} 
-                    />
+                    {getStatusIcon(system.status)}
                   </ListItemIcon>
                   <ListItemText 
-                    primary={system.name} 
-                    secondary={`Uptime: ${system.uptime}`} 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body1">{system.name}</Typography>
+                        <Chip 
+                          label={system.status} 
+                          size="small" 
+                          color={system.status === 'online' ? 'success' : system.status === 'warning' ? 'warning' : 'error'}
+                        />
+                      </Box>
+                    }
+                    secondary={
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Uptime: {system.uptime}
+                        </Typography>
+                        {system.responseTime && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Response: {system.responseTime}ms
+                            </Typography>
+                            <LinearProgress 
+                              variant="determinate" 
+                              value={Math.max(0, 100 - system.responseTime / 2)} 
+                              sx={{ width: 60, height: 4 }}
+                              color={getResponseTimeColor(system.responseTime)}
+                            />
+                          </Box>
+                        )}
+                      </Box>
+                    }
                   />
                 </ListItem>
               ))}
@@ -181,25 +306,52 @@ const Dashboard: React.FC = () => {
           </Paper>
         </Grid>
 
-        <Grid xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
               Criptomoedas em Tendência
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <List>
               {trendingCoins.map((coin) => (
-                <ListItem key={coin.symbol}>
+                <ListItem 
+                  key={coin.symbol} 
+                  sx={{ 
+                    px: 0,
+                    cursor: 'pointer',
+                    borderRadius: 1,
+                    '&:hover': { bgcolor: 'action.hover' }
+                  }}
+                  onClick={() => navigateToSection(`/sentiment?symbol=${coin.symbol}`)}
+                >
                   <ListItemIcon>
-                    <TrendingUpIcon 
-                      sx={{ 
-                        color: getSentimentColor(coin.sentiment) 
-                      }} 
-                    />
+                    <Avatar sx={{ bgcolor: getSentimentColor(coin.sentiment), width: 32, height: 32 }}>
+                      <TrendingUpIcon fontSize="small" />
+                    </Avatar>
                   </ListItemIcon>
                   <ListItemText 
-                    primary={`${coin.symbol}`} 
-                    secondary={`Sentimento: ${coin.sentiment}, Variação: ${coin.change}`} 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body1" fontWeight="bold">{coin.symbol}</Typography>
+                        <Chip 
+                          label={coin.sentiment} 
+                          size="small" 
+                          sx={{ bgcolor: getSentimentColor(coin.sentiment), color: 'white' }}
+                        />
+                      </Box>
+                    }
+                    secondary={
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Variação: {coin.change}
+                        </Typography>
+                        {coin.price && (
+                          <Typography variant="body2" fontWeight="medium">
+                            ${coin.price.toLocaleString()}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
                   />
                 </ListItem>
               ))}

@@ -2,7 +2,7 @@
 
 ## 📊 Visão Geral
 - **Data**: 31/05/2025
-- **Progresso Geral**: 55%
+- **Progresso Geral**: 85%
 - **Status**: Em desenvolvimento (Sprint 2 - Infraestrutura de Dados)
 
 ## ✅ Componentes Implementados

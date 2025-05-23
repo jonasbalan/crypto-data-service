@@ -1,6 +1,6 @@
 # Crypto Data Service
 
-Serviço de coleta, processamento e análise de dados do mercado de criptomoedas utilizando vetorização e IA.
+Serviço de análise de dados de criptomoedas com análise de sentimento, análise técnica e previsão de preços.
 
 ## 📋 Visão Geral
 
@@ -35,6 +35,10 @@ Este projeto implementa um serviço que coleta dados do mercado crypto, processa
 
 ## 📦 Instalação
 
+### 🚀 Desenvolvimento Local (Recomendado)
+
+Para desenvolvimento, onde os serviços ficam no Docker mas o código roda localmente:
+
 1. Clone o repositório:
 ```bash
 git clone https://github.com/seu-usuario/crypto-data-service.git
@@ -46,56 +50,43 @@ cd crypto-data-service
 npm install
 ```
 
-3. Crie um arquivo `.env` baseado no exemplo:
+3. Inicie o ambiente de desenvolvimento:
+
+```bash
+# Comando único que faz tudo! (Multiplataforma)
+npm run dev:mode
+```
+
+**Alternativas por plataforma:**
+- **Windows:** `.\dev-mode.ps1`
+- **Linux/Mac:** `./dev-mode.sh`
+
+📖 **Veja o [Guia de Desenvolvimento](README.DEV.md) para instruções detalhadas!**
+📖 **Veja o [Início Rápido](QUICK_START.md) para começar imediatamente!**
+
+### 🐳 Instalação Completa com Docker
+
+Para produção ou ambiente completo com Docker:
+
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/crypto-data-service.git
+cd crypto-data-service
+```
+
+2. Crie um arquivo `.env` baseado no exemplo:
 ```bash
 cp example.env .env
 ```
 
-4. Configure as variáveis de ambiente no arquivo `.env`:
-```
-# Servidor
-PORT=3000
-NODE_ENV=development
+3. Configure as variáveis de ambiente no arquivo `.env`
 
-# Serviço de Embeddings
-# Use 'openai' ou 'ollama'
-EMBEDDING_SERVICE=ollama
-
-# OpenAI (caso use EMBEDDING_SERVICE=openai)
-OPENAI_API_KEY=sua-api-key-aqui
-
-# Ollama (caso use EMBEDDING_SERVICE=ollama)
-OLLAMA_HOST=ollama
-OLLAMA_PORT=11434
-OLLAMA_MODEL=llama3
-
-# Milvus
-MILVUS_HOST=localhost
-MILVUS_PORT=19530
-MILVUS_USERNAME=root
-MILVUS_PASSWORD=Milvus
-MILVUS_COLLECTION=crypto_vectors
-MILVUS_DIMENSION=1536
-MILVUS_INDEX_TYPE=HNSW
-MILVUS_METRIC_TYPE=COSINE
-MILVUS_NLIST=1024
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_DB=0
-
-# Logging
-LOG_LEVEL=info
-```
-
-5. Inicie os containers:
+4. Inicie os containers:
 ```bash
 docker-compose up -d
 ```
 
-6. Execute as migrações:
+5. Execute as migrações:
 ```bash
 npm run migrate
 ```
@@ -235,4 +226,68 @@ O projeto utiliza GitHub Actions para:
 
 ## 📋 Licença
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes. 
+Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## Executando o projeto localmente com dependências no Docker
+
+### 1. Primeiro, inicie as dependências usando Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+Isso irá iniciar apenas o Redis e o Ollama em contêineres Docker.
+
+### 2. Configure as variáveis de ambiente para execução local
+
+Crie um arquivo `.env` na raiz do projeto com o seguinte conteúdo:
+
+```
+# Configurações gerais
+NODE_ENV=development
+PORT=3000
+
+# Configurações Redis
+REDIS_URL=redis://localhost:6379
+
+# Configurações para pular bancos de dados problemáticos
+SKIP_DATABASE_CONNECTION=true
+
+# Configurações Ollama
+OLLAMA_API_URL=http://localhost:11434
+EMBEDDING_SERVICE=ollama
+OLLAMA_MODEL=llama2
+
+# Porta para o frontend
+FRONTEND_PORT=3001
+```
+
+### 3. Instale as dependências do projeto
+
+```bash
+npm install
+```
+
+### 4. Execute o backend em um terminal
+
+```bash
+npm run dev
+```
+
+### 5. Execute o frontend em outro terminal
+
+```bash
+npm run dev:frontend
+```
+
+### 6. Acesse a aplicação
+
+- Frontend: http://localhost:3001
+- API Backend: http://localhost:3000
+
+## Funcionalidades
+
+- Análise de sentimento baseada em dados de redes sociais e notícias
+- Análise técnica com indicadores populares
+- Previsão de preços usando modelos de aprendizado de máquina
+- Visualização de dados em tempo real 

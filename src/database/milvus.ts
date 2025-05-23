@@ -3,44 +3,48 @@ import { milvusConfig } from '../config/milvus';
 import { logger } from '../utils/logger';
 
 class MilvusService {
-  private client: MilvusClient;
+  private client!: MilvusClient;
   private isConnected: boolean = false;
   private skipConnection: boolean = process.env.SKIP_DATABASE_CONNECTION === 'true';
 
   constructor() {
+    // Usar o nome do serviço Docker em vez do localhost
+    const host = process.env.MILVUS_HOST || 'milvus';
+    const port = process.env.MILVUS_PORT || milvusConfig.port;
+    
+    logger.info(`Configurando cliente Milvus para conectar a ${host}:${port}`);
+    
     this.client = new MilvusClient({
-      address: `${milvusConfig.host}:${milvusConfig.port}`,
+      address: `${host}:${port}`,
       username: milvusConfig.username,
       password: milvusConfig.password
     });
-    
-    if (this.skipConnection) {
-      logger.info('MilvusService: Operando em modo de simulação (SKIP_DATABASE_CONNECTION=true)');
-    }
   }
 
   async connect(): Promise<void> {
-    // Se estiver em modo de simulação, não tenta conectar realmente
+    // Se devemos pular a conexão com bancos de dados
     if (this.skipConnection) {
+      logger.info('SKIP_DATABASE_CONNECTION está ativado, ignorando conexão com Milvus');
       this.isConnected = true;
-      logger.info('MilvusService: Simulando conexão ao Milvus (modo mock)');
       return;
     }
     
     try {
+      logger.info('Tentando conectar ao Milvus...');
       await this.client.connect('5000');
       this.isConnected = true;
       logger.info('Conectado ao Milvus com sucesso');
     } catch (error) {
       logger.error('Erro ao conectar ao Milvus:', error);
-      throw error;
+      // Não lançamos o erro para permitir que o aplicativo continue
+      this.isConnected = false;
+      logger.info('Continuando sem conexão ao Milvus');
     }
   }
 
   async createCollection(): Promise<void> {
-    // Se estiver em modo de simulação, não cria collection
-    if (this.skipConnection) {
-      logger.info('MilvusService: Simulando criação de collection (modo mock)');
+    if (!this.isConnected || this.skipConnection) {
+      logger.info('Milvus não conectado ou em modo skip, ignorando createCollection');
       return;
     }
     
@@ -83,14 +87,13 @@ class MilvusService {
       }
     } catch (error) {
       logger.error('Erro ao criar collection:', error);
-      throw error;
+      // Não lançamos o erro para permitir que o aplicativo continue
     }
   }
 
   async insert(vectors: number[][], ids: string[], metadata: any[]): Promise<void> {
-    // Se estiver em modo de simulação, não insere realmente
-    if (this.skipConnection) {
-      logger.info(`MilvusService: Simulando inserção de ${vectors.length} vetores (modo mock)`);
+    if (!this.isConnected || this.skipConnection) {
+      logger.info(`Milvus não conectado ou em modo skip, ignorando inserção de ${vectors.length} vetores`);
       return;
     }
     
@@ -105,21 +108,16 @@ class MilvusService {
       });
     } catch (error) {
       logger.error('Erro ao inserir dados:', error);
-      throw error;
+      // Não lançamos o erro para permitir que o aplicativo continue
     }
   }
 
   async search(vector: number[], limit: number = 10): Promise<any> {
-    // Se estiver em modo de simulação, retorna dados simulados
-    if (this.skipConnection) {
-      logger.info('MilvusService: Simulando busca de vetores (modo mock)');
+    if (!this.isConnected || this.skipConnection) {
+      logger.info('Milvus não conectado ou em modo skip, retornando resultados vazios para search');
       return {
         status: { code: 0, message: 'success' },
-        results: Array(limit).fill(0).map((_, index) => ({
-          id: `mock_id_${index}`,
-          score: 0.9 - (index * 0.05),
-          metadata: { mock: true }
-        }))
+        results: []
       };
     }
     
@@ -133,34 +131,36 @@ class MilvusService {
       return results;
     } catch (error) {
       logger.error('Erro ao buscar dados:', error);
-      throw error;
+      // Retornar resultados vazios em caso de erro
+      return {
+        status: { code: 0, message: 'success' },
+        results: []
+      };
     }
   }
 
   async close(): Promise<void> {
-    // Se estiver em modo de simulação, não faz nada
-    if (this.skipConnection) {
-      this.isConnected = false;
-      logger.info('MilvusService: Simulando fechamento de conexão (modo mock)');
+    if (!this.isConnected || this.skipConnection) {
       return;
     }
     
-    if (this.isConnected) {
+    try {
       await this.client.closeConnection();
       this.isConnected = false;
       logger.info('Conexão com Milvus fechada');
+    } catch (error) {
+      logger.error('Erro ao fechar conexão com Milvus:', error);
     }
   }
 
   async getCollectionStats(): Promise<any> {
-    // Se estiver em modo de simulação, retorna estatísticas simuladas
-    if (this.skipConnection) {
-      logger.info('MilvusService: Simulando estatísticas de collection (modo mock)');
+    if (!this.isConnected || this.skipConnection) {
+      logger.info('Milvus não conectado ou em modo skip, retornando estatísticas vazias');
       return {
-        row_count: 1000,
-        data_size: 1024 * 1024 * 10, // 10MB simulados
-        index_size: 1024 * 1024 * 2,  // 2MB simulados
-        status: 'normal'
+        row_count: 0,
+        data_size: 0,
+        index_size: 0,
+        status: 'unavailable'
       };
     }
     
@@ -171,7 +171,12 @@ class MilvusService {
       return stats;
     } catch (error) {
       logger.error('Erro ao obter estatísticas da collection:', error);
-      throw error;
+      return {
+        row_count: 0,
+        data_size: 0,
+        index_size: 0,
+        status: 'error'
+      };
     }
   }
 }

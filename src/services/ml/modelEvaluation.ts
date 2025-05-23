@@ -160,7 +160,7 @@ export async function evaluateModel(
     
     // Desnormalizar valores
     const actualValues = normalizedTest.map(val => val * range + min);
-    const predictedDenormalized = testPredictions.map(val => val * range + min);
+    const predictedDenormalized = testPredictions.map(val => (val as number) * range + min);
     
     // Calcular métricas
     const mse = calculateMSE(actualValues, predictedDenormalized);

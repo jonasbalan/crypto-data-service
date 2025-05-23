@@ -3,20 +3,42 @@ import { logger } from '../utils/logger';
 
 export class CacheService {
   private static instance: CacheService;
-  private client: Redis;
+  private client!: Redis;
   private isConnected: boolean = false;
   private prefix: string = 'crypto:vector:';
   private defaultTTL: number = 3600; // 1 hora em segundos
+  private skipConnection: boolean = process.env.SKIP_DATABASE_CONNECTION === 'true';
 
   private constructor() {
-    this.client = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_DB || '0')
-    });
+    if (this.skipConnection) {
+      logger.info('SKIP_DATABASE_CONNECTION está ativado, ignorando conexão com Redis');
+      return;
+    }
 
-    this.setupListeners();
+    try {
+      // Usar o nome do serviço Docker em vez do localhost
+      const redisUrl = process.env.REDIS_URL || 'redis://redis:6379';
+      logger.info(`Conectando ao Redis em: ${redisUrl}`);
+      
+      this.client = new Redis(redisUrl, {
+        maxRetriesPerRequest: 2,
+        retryStrategy: (times) => {
+          const delay = Math.min(times * 500, 5000);
+          if (times > 5) {
+            logger.warn(`Desistindo de conectar ao Redis após ${times} tentativas`);
+            return null; // null para parar de tentar
+          }
+          logger.info(`Reconectando ao Redis (tentativa ${times}) em ${delay}ms...`);
+          return delay;
+        },
+        connectTimeout: 10000 // 10 segundos
+      });
+      
+      this.setupListeners();
+    } catch (error) {
+      logger.error('Erro ao criar cliente Redis:', error);
+      logger.info('Continuando sem cache Redis');
+    }
   }
 
   public static getInstance(): CacheService {
@@ -27,6 +49,8 @@ export class CacheService {
   }
 
   private setupListeners(): void {
+    if (!this.client) return;
+    
     this.client.on('connect', () => {
       this.isConnected = true;
       logger.info('Conectado ao Redis com sucesso');
@@ -45,8 +69,8 @@ export class CacheService {
 
   public async set(key: string, value: any, ttl: number = this.defaultTTL): Promise<void> {
     try {
-      if (!this.isConnected) {
-        logger.warn('Tentativa de uso do cache sem conexão ativa com Redis');
+      if (!this.isConnected || !this.client || this.skipConnection) {
+        logger.debug(`Cache: Ignorando set de ${key} (Redis não conectado)`);
         return;
       }
 
@@ -61,8 +85,8 @@ export class CacheService {
 
   public async get<T>(key: string): Promise<T | null> {
     try {
-      if (!this.isConnected) {
-        logger.warn('Tentativa de uso do cache sem conexão ativa com Redis');
+      if (!this.isConnected || !this.client || this.skipConnection) {
+        logger.debug(`Cache: Ignorando get de ${key} (Redis não conectado)`);
         return null;
       }
 
@@ -82,7 +106,7 @@ export class CacheService {
 
   public async delete(key: string): Promise<void> {
     try {
-      if (!this.isConnected) {
+      if (!this.isConnected || !this.client || this.skipConnection) {
         return;
       }
 
@@ -99,7 +123,7 @@ export class CacheService {
   }
 
   public async close(): Promise<void> {
-    if (this.isConnected) {
+    if (this.isConnected && this.client) {
       await this.client.quit();
       this.isConnected = false;
       logger.info('Conexão com Redis fechada');

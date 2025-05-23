@@ -8,6 +8,18 @@ import { uptime } from 'process';
 const router: Router = express.Router();
 
 /**
+ * @route GET /api/health
+ * @description Verifica o status básico do serviço (endpoint principal)
+ */
+router.get('/', (req: Request, res: Response): Response => {
+  return res.status(200).json({ 
+    status: 'ok',
+    service: 'crypto-data-service',
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
  * @route GET /api/health/check
  * @description Verifica o status do serviço
  */

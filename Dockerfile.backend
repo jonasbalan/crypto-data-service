@@ -1,0 +1,29 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm install
+
+# Copiar código fonte
+COPY . .
+
+# Criar diretório de logs com permissões adequadas
+RUN mkdir -p logs && chmod 777 logs
+
+# Configurar variáveis de ambiente
+ENV NODE_ENV=development
+ENV REDIS_URL=redis://redis:6379
+ENV SKIP_DATABASE_CONNECTION=true
+ENV OLLAMA_API_URL=http://ollama:11434
+ENV EMBEDDING_SERVICE=ollama
+ENV OLLAMA_MODEL=llama2
+
+# Expor porta
+EXPOSE 3000
+
+# Comando para iniciar o backend
+CMD ["npm", "run", "dev"] 

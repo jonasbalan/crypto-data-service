@@ -121,8 +121,15 @@ async function initializeVectorDB(): Promise<void> {
  * Inicializa o cliente Redis para cache
  */
 async function initializeRedis(): Promise<void> {
+  // Se estiver com SKIP_DATABASE_CONNECTION ativado, não tenta conectar realmente
+  if (process.env.SKIP_DATABASE_CONNECTION === 'true') {
+    logger.info('SKIP_DATABASE_CONNECTION está ativado, ignorando conexão com Redis');
+    return;
+  }
+  
   try {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisUrl = process.env.REDIS_URL || 'redis://redis:6379';
+    logger.info(`Tentando conectar ao Redis em: ${redisUrl}`);
     
     redisClient = new Redis(redisUrl);
     
@@ -132,7 +139,8 @@ async function initializeRedis(): Promise<void> {
     logger.info('Conexão com Redis estabelecida com sucesso');
   } catch (error) {
     logger.error('Erro ao conectar ao Redis:', error);
-    throw error;
+    // Não lançamos o erro aqui para evitar que o serviço falhe se apenas o Redis não estiver disponível
+    logger.info('Continuando sem conexão ao Redis.');
   }
 }
 
@@ -163,4 +171,23 @@ export function getRedisClient(): Redis {
     throw new Error('Cliente Redis não foi inicializado');
   }
   return redisClient;
+}
+
+// Função principal de inicialização
+export async function initializeDatabase(): Promise<void> {
+  try {
+    if (process.env.SKIP_DATABASE_CONNECTION === 'true') {
+      logger.info('SKIP_DATABASE_CONNECTION está ativado, ignorando inicialização de bancos de dados');
+      return;
+    }
+    
+    // Inicializa o Redis
+    await initializeRedis();
+
+    logger.info('Inicialização de banco de dados concluída');
+  } catch (error) {
+    logger.error('Erro na inicialização do banco de dados:', error);
+    // Não terminamos o processo em caso de erro, apenas registramos
+    logger.info('Continuando a execução do servidor apesar de erros na inicialização do banco de dados');
+  }
 } 
