@@ -7,6 +7,7 @@ import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import { setupRoutes } from './routes';
+import realDataRoutes from './routes/realDataRoutes';
 import { setupWebSocket } from './websocket';
 import { setupMetrics } from './metrics';
 import { logger } from './utils/logger';
@@ -38,6 +39,10 @@ setupMetrics(app);
 
 // Configurar rotas da API
 setupRoutes(app);
+
+// Configurar rotas de dados reais
+app.use('/api/real', realDataRoutes);
+logger.info('Rotas de dados reais configuradas em /api/real/*');
 
 // Configurar Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import SentimentAnalysis from './pages/SentimentAnalysis';
 import TechnicalAnalysis from './pages/TechnicalAnalysis';
 import PricePrediction from './pages/PricePrediction';
+import RealNews from './pages/RealNews';
 import Layout from './components/Layout';
 
 const App: React.FC = () => {
@@ -17,6 +18,7 @@ const App: React.FC = () => {
           <Route path="/sentiment" element={<SentimentAnalysis />} />
           <Route path="/technical" element={<TechnicalAnalysis />} />
           <Route path="/prediction" element={<PricePrediction />} />
+          <Route path="/news" element={<RealNews />} />
         </Routes>
       </Layout>
     </Box>

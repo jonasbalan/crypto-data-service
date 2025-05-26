@@ -68,34 +68,61 @@ const Dashboard: React.FC = () => {
     setError(null);
     
     try {
-      // Verificar status da API
-      const healthResponse = await fetch('/api/health');
-      if (!healthResponse.ok) {
-        throw new Error('API não está respondendo');
+      console.log('🔄 Carregando dados do dashboard...');
+      
+      // Primeiro tentar dados reais
+      try {
+        console.log('🚀 Tentando API de dados reais...');
+        const realResponse = await fetch('/api/real/trending');
+        
+        if (realResponse.ok) {
+          const realData = await realResponse.json();
+          console.log('✅ Dados reais carregados:', realData);
+          
+          if (realData.success && realData.data) {
+            const trendingData: TrendingCoin[] = realData.data.map((coin: any) => ({
+              symbol: coin.symbol,
+              sentiment: coin.sentiment,
+              change: `${coin.change24h > 0 ? '+' : ''}${coin.change24h.toFixed(1)}%`,
+              price: coin.price,
+              volume: coin.volume24h
+            }));
+            setTrendingCoins(trendingData);
+            console.log('✅ Dashboard atualizado com dados reais');
+            return;
+          }
+        }
+      } catch (realError) {
+        console.warn('⚠️ Erro nos dados reais, tentando API simulada:', realError);
       }
 
-      // Buscar criptomoedas em tendência
+      // Fallback para API simulada
       try {
+        console.log('🔄 Tentando API simulada...');
         const trending = await sentimentApi.getTrending();
         const trendingData: TrendingCoin[] = trending.map((coin: ApiTrendingCoin) => ({
           symbol: coin.symbol,
           sentiment: coin.sentiment,
           change: `${coin.change24h > 0 ? '+' : ''}${coin.change24h.toFixed(1)}%`,
-          price: undefined, // Será definido posteriormente se necessário
+          price: undefined,
           volume: coin.volume24h
         }));
         setTrendingCoins(trendingData);
-      } catch (trendingError) {
-        console.warn('Erro ao buscar trending coins:', trendingError);
-        // Usar dados simulados se a API falhar
+        console.log('✅ Dashboard atualizado com API simulada');
+      } catch (apiError) {
+        console.warn('⚠️ Erro na API simulada, usando dados estáticos:', apiError);
+        
+        // Fallback final para dados estáticos
         setTrendingCoins([
           { symbol: 'BTC', sentiment: 'bullish', change: '+5.2%', price: 45000 },
           { symbol: 'ETH', sentiment: 'bullish', change: '+3.8%', price: 3200 },
           { symbol: 'SOL', sentiment: 'neutral', change: '+0.5%', price: 98 },
           { symbol: 'XRP', sentiment: 'bearish', change: '-2.1%', price: 0.52 }
         ]);
+        console.log('✅ Dashboard atualizado com dados estáticos');
       }
     } catch (err: any) {
+      console.error('❌ Erro crítico no dashboard:', err);
       setError(`Erro ao carregar dados: ${err.message}`);
     } finally {
       setLoading(false);

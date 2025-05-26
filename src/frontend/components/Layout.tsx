@@ -20,6 +20,7 @@ import {
   Insights as InsightsIcon,
   ShowChart as ShowChartIcon,
   TrendingUp as TrendingUpIcon,
+  Article as NewsIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -42,6 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { text: 'Análise de Sentimento', icon: <InsightsIcon />, path: '/sentiment' },
     { text: 'Análise Técnica', icon: <ShowChartIcon />, path: '/technical' },
     { text: 'Previsão de Preços', icon: <TrendingUpIcon />, path: '/prediction' },
+    { text: 'Notícias em Tempo Real', icon: <NewsIcon />, path: '/news' },
   ];
 
   const drawer = (
