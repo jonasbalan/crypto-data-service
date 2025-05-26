@@ -1,0 +1,37 @@
+# Code Owners para crypto-data-service
+# Documentação: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners - serão solicitados para review em todos os PRs
+* @jonasbalan
+
+# API e Backend
+/src/api/ @jonasbalan
+/src/services/ @jonasbalan
+/src/models/ @jonasbalan
+
+# Configurações de infraestrutura
+/.github/ @jonasbalan
+/docker/ @jonasbalan
+docker-compose.yml @jonasbalan
+Dockerfile @jonasbalan
+
+# Configurações de build e CI/CD
+package.json @jonasbalan
+package-lock.json @jonasbalan
+tsconfig.json @jonasbalan
+/.github/workflows/ @jonasbalan
+
+# Documentação
+README.md @jonasbalan
+/docs/ @jonasbalan
+CONTRIBUTING.md @jonasbalan
+SECURITY.md @jonasbalan
+
+# Configurações de segurança
+.env.example @jonasbalan
+/config/ @jonasbalan
+
+# Tests
+/tests/ @jonasbalan
+*.test.* @jonasbalan
+jest.config.* @jonasbalan
