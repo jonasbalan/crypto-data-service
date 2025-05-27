@@ -91,7 +91,7 @@ const RealNews: React.FC = () => {
         </Typography>
         
         <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Grid size={{ xs: 12, sm: 8 }}>
+          <Grid xs={12} sm={8}>
             <TextField
               fullWidth
               variant="outlined"
@@ -101,7 +101,7 @@ const RealNews: React.FC = () => {
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
+          <Grid xs={12} sm={4}>
             <Button
               fullWidth
               variant="contained"

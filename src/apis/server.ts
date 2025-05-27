@@ -5,13 +5,12 @@ import cryptoRoutes from './routes/crypto';
 import vectorRoutes from './routes/vector';
 import analyticsRoutes from './routes/analytics';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
+import { WebSocketService, websocketService } from '../services/websocket';
 import Redis from 'ioredis';
 
 // Criar aplicação Express
 const app = express();
 let httpServer: any = null;
-let io: Server | null = null;
 
 // Verificar uso de memória periodicamente em desenvolvimento
 if (process.env.NODE_ENV === 'development') {
@@ -89,16 +88,9 @@ export async function startApiServer(): Promise<void> {
     // Criar servidor HTTP
     httpServer = createServer(app);
     
-    // Configurar Socket.IO para dados em tempo real
-    io = new Server(httpServer, {
-      cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
-      }
-    });
-    
-    // Configurar eventos do Socket.IO
-    setupSocketIO(io);
+    // Inicializar WebSocket Service
+    const wsService = new WebSocketService(httpServer);
+    (global as any).websocketService = wsService;
     
     // Função para tentar iniciar o servidor em diferentes portas
     const tryStartServer = (port: number): Promise<void> => {
@@ -115,6 +107,7 @@ export async function startApiServer(): Promise<void> {
         httpServer.listen(port, () => {
           const duration = endTimer('startApiServer');
           logger.info(`Servidor API iniciado na porta ${port} em ${duration.toFixed(2)}ms`);
+          logger.info(`WebSocket service ativo para atualizações em tempo real`);
           resolve();
         });
       });
@@ -129,117 +122,20 @@ export async function startApiServer(): Promise<void> {
 }
 
 /**
- * Configura eventos do Socket.IO
- * @param io Instância do Socket.IO
- */
-function setupSocketIO(io: Server): void {
-  // Configurar conexões de clientes
-  io.on('connection', (socket) => {
-    logger.info(`Novo cliente Socket.IO conectado: ${socket.id}`);
-    
-    // Evento de subscrição em dados de criptomoedas
-    socket.on('subscribe', (symbols: string[]) => {
-      if (Array.isArray(symbols)) {
-        symbols.forEach(symbol => {
-          logger.debug(`Cliente ${socket.id} subscreveu em ${symbol}`);
-          socket.join(`crypto:${symbol}`);
-        });
-      }
-    });
-    
-    // Evento de cancelamento de subscrição
-    socket.on('unsubscribe', (symbols: string[]) => {
-      if (Array.isArray(symbols)) {
-        symbols.forEach(symbol => {
-          logger.debug(`Cliente ${socket.id} cancelou subscrição em ${symbol}`);
-          socket.leave(`crypto:${symbol}`);
-        });
-      }
-    });
-    
-    // Evento de desconexão
-    socket.on('disconnect', () => {
-      logger.info(`Cliente Socket.IO desconectado: ${socket.id}`);
-    });
-  });
-  
-  // Configurar assinante Redis para encaminhar atualizações de preço
-  setupRedisSubscriber();
-}
-
-/**
- * Configura assinante Redis para encaminhar mensagens para Socket.IO
- */
-async function setupRedisSubscriber(): Promise<void> {
-  try {
-    // Criar cliente Redis dedicado para subscrição
-    const redisSubscriber = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
-    
-    // Criar cliente Redis separado para publicação
-    const redisPublisher = new Redis(process.env.REDIS_URL || 'redis://redis:6379');
-    
-    // Assinar em canais relevantes
-    await redisSubscriber.subscribe('crypto:price:update');
-    await redisSubscriber.subscribe('crypto:trade:new');
-    await redisSubscriber.subscribe('crypto:transaction:new');
-    
-    // Configurar handler de mensagens
-    redisSubscriber.on('message', (channel, message) => {
-      try {
-        const data = JSON.parse(message);
-        
-        switch (channel) {
-          case 'crypto:price:update':
-            if (data.symbol && io) {
-              io.to(`crypto:${data.symbol}`).emit('price_update', data);
-            }
-            break;
-            
-          case 'crypto:trade:new':
-            if (data.symbol && io) {
-              io.to(`crypto:${data.symbol}`).emit('trade', data);
-            }
-            break;
-            
-          case 'crypto:transaction:new':
-            if (data.blockchain && io) {
-              io.to(`blockchain:${data.blockchain}`).emit('transaction', data);
-            }
-            break;
-        }
-      } catch (error) {
-        logger.error('Erro ao processar mensagem Redis:', error);
-      }
-    });
-    
-    // Exportar o cliente de publicação para uso em outros módulos
-    (global as any).redisPublisher = redisPublisher;
-    
-    logger.info('Assinante Redis configurado para eventos em tempo real');
-  } catch (error) {
-    logger.error('Erro ao configurar assinante Redis:', error);
-    throw error;
-  }
-}
-
-/**
- * Finaliza o servidor API
+ * Para o servidor API
  */
 export async function shutdownApiServer(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!httpServer) {
-      resolve();
-      return;
+  try {
+    if ((global as any).websocketService) {
+      (global as any).websocketService.stop();
     }
     
-    httpServer.close((err: Error) => {
-      if (err) {
-        logger.error('Erro ao finalizar servidor API:', err);
-        reject(err);
-      } else {
-        logger.info('Servidor API finalizado com sucesso');
-        resolve();
-      }
-    });
-  });
+    if (httpServer) {
+      httpServer.close();
+      logger.info('Servidor API parado');
+    }
+  } catch (error) {
+    logger.error('Erro ao parar servidor API:', error);
+    throw error;
+  }
 } 

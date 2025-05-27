@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Data Service - API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #666;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Crypto Data Service - API Test Dashboard</h1>
+    
+    <div class="grid">
+        <!-- Health Check -->
+        <div class="container">
+            <h2>🏥 Health Check</h2>
+            <button onclick="testHealthCheck()">Test Health</button>
+            <button onclick="testMetricsHealth()">Test Metrics Health</button>
+            <div id="health-result" class="result"></div>
+        </div>
+
+        <!-- System Metrics -->
+        <div class="container">
+            <h2>📊 System Metrics</h2>
+            <button onclick="testSystemMetrics()">Get System Metrics</button>
+            <button onclick="testMLMetrics()">Get ML Metrics</button>
+            <div id="metrics-result" class="result"></div>
+        </div>
+
+        <!-- Sentiment Analysis -->
+        <div class="container">
+            <h2>😊 Sentiment Analysis</h2>
+            <button onclick="testSentimentTrending()">Trending Sentiment</button>
+            <button onclick="testSentimentBTC()">BTC Sentiment</button>
+            <button onclick="testSentimentSummary()">BTC Summary</button>
+            <div id="sentiment-result" class="result"></div>
+        </div>
+
+        <!-- Exchange Data -->
+        <div class="container">
+            <h2>💱 Exchange Data</h2>
+            <button onclick="testBTCPrices()">BTC Prices</button>
+            <button onclick="testBTCTicker()">BTC Ticker</button>
+            <button onclick="testBTCKlines()">BTC Klines</button>
+            <div id="exchange-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        async function makeRequest(url, resultElementId) {
+            const resultElement = document.getElementById(resultElementId);
+            resultElement.textContent = 'Loading...';
+            resultElement.className = 'result';
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                    resultElement.className = 'result success';
+                } else {
+                    resultElement.textContent = `Error ${response.status}: ${JSON.stringify(data, null, 2)}`;
+                    resultElement.className = 'result error';
+                }
+            } catch (error) {
+                resultElement.textContent = `Network Error: ${error.message}`;
+                resultElement.className = 'result error';
+            }
+        }
+
+        // Health Check Functions
+        function testHealthCheck() {
+            makeRequest(`${API_BASE}/health`, 'health-result');
+        }
+
+        function testMetricsHealth() {
+            makeRequest(`${API_BASE}/metrics/health`, 'health-result');
+        }
+
+        // Metrics Functions
+        function testSystemMetrics() {
+            makeRequest(`${API_BASE}/metrics/system`, 'metrics-result');
+        }
+
+        function testMLMetrics() {
+            makeRequest(`${API_BASE}/metrics/ml`, 'metrics-result');
+        }
+
+        // Sentiment Functions
+        function testSentimentTrending() {
+            makeRequest(`${API_BASE}/sentiment/trending`, 'sentiment-result');
+        }
+
+        function testSentimentBTC() {
+            makeRequest(`${API_BASE}/sentiment/BTC`, 'sentiment-result');
+        }
+
+        function testSentimentSummary() {
+            makeRequest(`${API_BASE}/sentiment/BTC/summary`, 'sentiment-result');
+        }
+
+        // Exchange Functions
+        function testBTCPrices() {
+            makeRequest(`${API_BASE}/exchange/prices?symbol=BTC`, 'exchange-result');
+        }
+
+        function testBTCTicker() {
+            makeRequest(`${API_BASE}/exchange/ticker/BTCUSDT`, 'exchange-result');
+        }
+
+        function testBTCKlines() {
+            makeRequest(`${API_BASE}/exchange/klines/BTCUSDT?interval=1h&limit=5`, 'exchange-result');
+        }
+
+        // Auto-load health check on page load
+        window.onload = function() {
+            testHealthCheck();
+        };
+    </script>
+</body>
+</html> 

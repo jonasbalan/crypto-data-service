@@ -44,7 +44,7 @@ const cacheMiddleware = (ttlSeconds: number) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: Símbolo da criptomoeda (ex: BTC, ETH)
+ *         description: Simbolo da criptomoeda (ex BTC ETH)
  *     responses:
  *       200:
  *         description: Dados da criptomoeda obtidos com sucesso

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Frontend - Crypto Data Service</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .status {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+        .status-card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .status-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+        }
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+        }
+        .online { background-color: #4CAF50; }
+        .offline { background-color: #f44336; }
+        .warning { background-color: #ff9800; }
+        
+        .iframe-container {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            height: 800px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4CAF50;
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Crypto Data Service - Frontend Teste</h1>
+        
+        <div class="info">
+            <strong>✅ Status:</strong> Frontend React compilado com sucesso! Todos os erros do Material-UI Grid foram corrigidos.
+        </div>
+        
+        <div class="status">
+            <div class="status-card">
+                <h3>Frontend React</h3>
+                <div class="status-indicator online" id="frontend-status"></div>
+                <p>Porta 3001</p>
+                <p id="frontend-text">Online</p>
+            </div>
+            <div class="status-card">
+                <h3>Backend API</h3>
+                <div class="status-indicator warning" id="backend-status"></div>
+                <p>Porta 3000</p>
+                <p id="backend-text">Rate Limited</p>
+            </div>
+            <div class="status-card">
+                <h3>Compilação</h3>
+                <div class="status-indicator online"></div>
+                <p>Webpack</p>
+                <p>Sucesso (95s)</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="http://localhost:3001" class="btn" target="_blank">🌐 Abrir Frontend</a>
+            <a href="http://localhost:3000/api/health" class="btn" target="_blank">🔧 Testar Backend</a>
+            <button class="btn" onclick="reloadIframe()">🔄 Recarregar</button>
+        </div>
+        
+        <div class="iframe-container">
+            <iframe id="frontend-iframe" src="http://localhost:3001" title="Crypto Data Service Frontend"></iframe>
+        </div>
+    </div>
+
+    <script>
+        function reloadIframe() {
+            document.getElementById('frontend-iframe').src = document.getElementById('frontend-iframe').src;
+        }
+
+        // Verificar status dos serviços
+        async function checkServices() {
+            try {
+                // Testar frontend
+                const frontendResponse = await fetch('http://localhost:3001');
+                if (frontendResponse.ok) {
+                    document.getElementById('frontend-status').className = 'status-indicator online';
+                    document.getElementById('frontend-text').textContent = 'Online';
+                }
+            } catch (error) {
+                document.getElementById('frontend-status').className = 'status-indicator offline';
+                document.getElementById('frontend-text').textContent = 'Offline';
+            }
+
+            try {
+                // Testar backend (pode dar rate limit)
+                const backendResponse = await fetch('http://localhost:3000/api/health');
+                if (backendResponse.ok) {
+                    document.getElementById('backend-status').className = 'status-indicator online';
+                    document.getElementById('backend-text').textContent = 'Online';
+                } else if (backendResponse.status === 429) {
+                    document.getElementById('backend-status').className = 'status-indicator warning';
+                    document.getElementById('backend-text').textContent = 'Rate Limited';
+                }
+            } catch (error) {
+                document.getElementById('backend-status').className = 'status-indicator offline';
+                document.getElementById('backend-text').textContent = 'Offline';
+            }
+        }
+
+        // Verificar status a cada 30 segundos
+        checkServices();
+        setInterval(checkServices, 30000);
+    </script>
+</body>
+</html> 

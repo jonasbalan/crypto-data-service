@@ -6,6 +6,7 @@ import realtimeRoutes from './apis/routes/realtime';
 import exchangeRoutes from './apis/routes/exchange';
 import predictionRoutes from './apis/routes/prediction';
 import sentimentRoutes from './routes/sentimentRoutes';
+import metricsRoutes from './routes/metricsRoutes';
 import { logger } from './utils/logger';
 
 export const setupRoutes = (app: Express): void => {
@@ -18,6 +19,7 @@ export const setupRoutes = (app: Express): void => {
     app.use('/api/exchange', exchangeRoutes);
     app.use('/api/prediction', predictionRoutes);
     app.use('/api/sentiment', sentimentRoutes);
+    app.use('/api/metrics', metricsRoutes);
     
     // Rota de fallback
     app.use('*', (req, res) => {
