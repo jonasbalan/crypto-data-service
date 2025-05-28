@@ -145,12 +145,14 @@ export class BinanceWebSocketHandler extends WebSocketHandlerBase {
         source: 'binance'
       };
       
-      // Publicar dados para Redis pub/sub
+      // Publicar dados para Redis pub/sub (apenas se Redis estiver disponível)
       const redis = getRedisClient();
-      await redis.publish('crypto:price:update', JSON.stringify({
-        symbol,
-        data: priceData
-      }));
+      if (redis) {
+        await redis.publish('crypto:price:update', JSON.stringify({
+          symbol,
+          data: priceData
+        }));
+      }
       
       // Emitir evento para outros componentes internos
       this.emit('price_update', symbol, priceData);
@@ -187,12 +189,14 @@ export class BinanceWebSocketHandler extends WebSocketHandlerBase {
         source: 'binance'
       };
       
-      // Publicar dados para Redis pub/sub
+      // Publicar dados para Redis pub/sub (apenas se Redis estiver disponível)
       const redis = getRedisClient();
-      await redis.publish('crypto:trade:new', JSON.stringify({
-        symbol,
-        data: tradeData
-      }));
+      if (redis) {
+        await redis.publish('crypto:trade:new', JSON.stringify({
+          symbol,
+          data: tradeData
+        }));
+      }
       
       // Emitir evento para outros componentes internos
       this.emit('trade', symbol, tradeData);

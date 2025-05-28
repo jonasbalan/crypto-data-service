@@ -49,11 +49,13 @@ export async function getCryptoPrices(symbols: string[]): Promise<IPriceData[]> 
     const redis = getRedisClient();
     const cacheKey = `coingecko:prices:${symbols.join(',')}`;
     
-    // Verificar cache
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      logger.debug('Retornando dados de preço do cache');
-      return JSON.parse(cachedData);
+    // Verificar cache (apenas se Redis estiver disponível)
+    if (redis) {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        logger.debug('Retornando dados de preço do cache');
+        return JSON.parse(cachedData);
+      }
     }
     
     // Consultar API do CoinGecko
@@ -78,8 +80,10 @@ export async function getCryptoPrices(symbols: string[]): Promise<IPriceData[]> 
       source: 'coingecko'
     }));
     
-    // Salvar no cache
-    await redis.set(cacheKey, JSON.stringify(priceData), 'EX', CACHE_TTL);
+    // Salvar no cache (apenas se Redis estiver disponível)
+    if (redis) {
+      await redis.set(cacheKey, JSON.stringify(priceData), 'EX', CACHE_TTL);
+    }
     
     return priceData;
   } catch (error) {
@@ -98,11 +102,13 @@ export async function getMarketData(symbols: string[]): Promise<CoinGeckoMarketD
     const redis = getRedisClient();
     const cacheKey = `coingecko:market:${symbols.join(',')}`;
     
-    // Verificar cache
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      logger.debug('Retornando dados de mercado do cache');
-      return JSON.parse(cachedData);
+    // Verificar cache (apenas se Redis estiver disponível)
+    if (redis) {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        logger.debug('Retornando dados de mercado do cache');
+        return JSON.parse(cachedData);
+      }
     }
     
     // Consultar API do CoinGecko
@@ -118,8 +124,10 @@ export async function getMarketData(symbols: string[]): Promise<CoinGeckoMarketD
       }
     });
     
-    // Salvar no cache
-    await redis.set(cacheKey, JSON.stringify(response.data), 'EX', CACHE_TTL);
+    // Salvar no cache (apenas se Redis estiver disponível)
+    if (redis) {
+      await redis.set(cacheKey, JSON.stringify(response.data), 'EX', CACHE_TTL);
+    }
     
     return response.data;
   } catch (error) {

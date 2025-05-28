@@ -73,20 +73,26 @@ const Dashboard: React.FC = () => {
       // Primeiro tentar dados reais
       try {
         console.log('🚀 Tentando API de dados reais...');
-        const realResponse = await fetch('/api/real/trending');
+        const realResponse = await fetch('/api/trending/real');
         
         if (realResponse.ok) {
           const realData = await realResponse.json();
           console.log('✅ Dados reais carregados:', realData);
           
-          if (realData.success && realData.data) {
-            const trendingData: TrendingCoin[] = realData.data.map((coin: any) => ({
-              symbol: coin.symbol,
-              sentiment: coin.sentiment,
-              change: `${coin.change24h > 0 ? '+' : ''}${coin.change24h.toFixed(1)}%`,
-              price: coin.price,
-              volume: coin.volume24h
-            }));
+          if (Array.isArray(realData) && realData.length > 0) {
+            const trendingData: TrendingCoin[] = realData.map((coin: any) => {
+              let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral';
+              if (coin.change24h > 2) sentiment = 'bullish';
+              else if (coin.change24h < -2) sentiment = 'bearish';
+              
+              return {
+                symbol: coin.symbol,
+                sentiment,
+                change: `${coin.change24h > 0 ? '+' : ''}${coin.change24h.toFixed(1)}%`,
+                price: coin.price,
+                volume: coin.volume24h
+              };
+            });
             setTrendingCoins(trendingData);
             console.log('✅ Dashboard atualizado com dados reais');
             return;

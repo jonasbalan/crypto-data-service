@@ -48,11 +48,13 @@ export async function getTickers(symbols: string[]): Promise<IPriceData[]> {
     const redis = getRedisClient();
     const cacheKey = `binance:tickers:${symbols.join(',')}`;
     
-    // Verificar cache
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      logger.debug('Retornando tickers da Binance do cache');
-      return JSON.parse(cachedData);
+    // Verificar cache (apenas se Redis estiver disponível)
+    if (redis) {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        logger.debug('Retornando tickers da Binance do cache');
+        return JSON.parse(cachedData);
+      }
     }
     
     // Consultar todos os tickers
@@ -74,8 +76,10 @@ export async function getTickers(symbols: string[]): Promise<IPriceData[]> {
       source: 'binance'
     }));
     
-    // Salvar no cache
-    await redis.set(cacheKey, JSON.stringify(priceData), 'EX', CACHE_TTL);
+    // Salvar no cache (apenas se Redis estiver disponível)
+    if (redis) {
+      await redis.set(cacheKey, JSON.stringify(priceData), 'EX', CACHE_TTL);
+    }
     
     return priceData;
   } catch (error) {
@@ -95,11 +99,13 @@ export async function getOrderBookLiquidity(symbol: string, depth: number = 500)
     const redis = getRedisClient();
     const cacheKey = `binance:orderbook:${symbol}:${depth}`;
     
-    // Verificar cache
-    const cachedData = await redis.get(cacheKey);
-    if (cachedData) {
-      logger.debug('Retornando dados de liquidez do cache');
-      return JSON.parse(cachedData);
+    // Verificar cache (apenas se Redis estiver disponível)
+    if (redis) {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        logger.debug('Retornando dados de liquidez do cache');
+        return JSON.parse(cachedData);
+      }
     }
     
     // Consultar livro de ordens
@@ -154,12 +160,52 @@ export async function getOrderBookLiquidity(symbol: string, depth: number = 500)
       timestamp: new Date()
     };
     
-    // Salvar no cache
-    await redis.set(cacheKey, JSON.stringify(liquidityData), 'EX', CACHE_TTL);
+    // Salvar no cache (apenas se Redis estiver disponível)
+    if (redis) {
+      await redis.set(cacheKey, JSON.stringify(liquidityData), 'EX', CACHE_TTL);
+    }
     
     return liquidityData;
   } catch (error) {
     logger.error('Erro ao obter dados de liquidez da Binance:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obter candles OHLCV históricos da Binance
+ * @param symbol Símbolo no formato Binance (ex: 'BTCUSDT')
+ * @param interval Intervalo dos candles (ex: '1d', '1h', '5m')
+ * @param limit Quantidade de candles (máx 1000)
+ * @returns Array de OHLCVData
+ */
+export async function getOHLCV(symbol: string, interval: string = '1d', limit: number = 200): Promise<{
+  timestamp: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}[]> {
+  try {
+    const response = await axios.get(`${BINANCE_API_URL}/klines`, {
+      params: {
+        symbol,
+        interval,
+        limit
+      }
+    });
+    // Cada candle: [openTime, open, high, low, close, volume, closeTime, ...]
+    return response.data.map((candle: any[]) => ({
+      timestamp: candle[0],
+      open: parseFloat(candle[1]),
+      high: parseFloat(candle[2]),
+      low: parseFloat(candle[3]),
+      close: parseFloat(candle[4]),
+      volume: parseFloat(candle[5])
+    }));
+  } catch (error) {
+    logger.error('Erro ao obter OHLCV da Binance:', error);
     throw error;
   }
 } 

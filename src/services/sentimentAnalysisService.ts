@@ -86,6 +86,12 @@ class SentimentAnalysisService {
   }
 
   private async initializeRedis() {
+    // Pular Redis se estiver em modo sem Docker
+    if (process.env.SKIP_REDIS_CONNECTION === 'true' || process.env.SKIP_DATABASE_CONNECTION === 'true') {
+      console.log('🚫 Redis desabilitado para análise de sentimento (modo sem Docker)');
+      return;
+    }
+
     try {
       // Usar a mesma configuração do metricsService
       const Redis = require('redis');

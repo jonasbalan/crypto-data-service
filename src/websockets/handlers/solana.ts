@@ -206,12 +206,14 @@ export class SolanaWebSocketHandler extends WebSocketHandlerBase {
           blockchain: 'solana'
         };
         
-        // Publicar dados para Redis pub/sub
+        // Publicar dados para Redis pub/sub (apenas se Redis estiver disponível)
         const redis = getRedisClient();
-        await redis.publish('crypto:transaction:new', JSON.stringify({
-          blockchain: 'solana',
-          data: transaction
-        }));
+        if (redis) {
+          await redis.publish('crypto:transaction:new', JSON.stringify({
+            blockchain: 'solana',
+            data: transaction
+          }));
+        }
         
         // Emitir evento para outros componentes internos
         this.emit('transaction', transaction);

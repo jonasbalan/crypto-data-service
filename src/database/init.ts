@@ -166,7 +166,10 @@ export function getMilvusClient(): MilvusClient {
   return milvusClient;
 }
 
-export function getRedisClient(): Redis {
+export function getRedisClient(): Redis | null {
+  if (process.env.SKIP_REDIS_CONNECTION === 'true' || process.env.SKIP_DATABASE_CONNECTION === 'true') {
+    return null;
+  }
   if (!redisClient) {
     throw new Error('Cliente Redis não foi inicializado');
   }

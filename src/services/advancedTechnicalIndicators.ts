@@ -1,5 +1,6 @@
 import * as Redis from 'redis';
 import { performance } from 'perf_hooks';
+import { getOHLCV } from './api/binance';
 
 export interface OHLCVData {
   timestamp: number;
@@ -119,6 +120,12 @@ class AdvancedTechnicalIndicators {
   }
 
   private async initializeRedis() {
+    // Pular Redis se estiver em modo sem Docker
+    if (process.env.SKIP_REDIS_CONNECTION === 'true' || process.env.SKIP_DATABASE_CONNECTION === 'true') {
+      console.log('🚫 Redis desabilitado para indicadores avançados (modo sem Docker)');
+      return;
+    }
+
     try {
       const redis = Redis.createClient({
         url: process.env.REDIS_URL || 'redis://localhost:6379'
@@ -492,8 +499,13 @@ class AdvancedTechnicalIndicators {
       }
     }
 
-    // Gerar dados mock (em produção, buscar dados reais)
-    const data = this.generateMockOHLCVData(symbol, limit);
+    // Buscar dados reais da Binance
+    let data;
+    try {
+      data = await getOHLCV(symbol, timeframe, limit);
+    } catch (error) {
+      throw new Error('Erro ao buscar candles reais da Binance: ' + error);
+    }
 
     const bollingerBands = this.calculateBollingerBands(data);
     const macdAdvanced = this.calculateMACDAdvanced(data);
@@ -803,53 +815,6 @@ class AdvancedTechnicalIndicators {
       confidence: 0,
       reasoning
     };
-  }
-
-  private generateMockOHLCVData(symbol: string, limit: number): OHLCVData[] {
-    const data: OHLCVData[] = [];
-    const basePrice = this.getBasePriceForSymbol(symbol);
-    let currentPrice = basePrice;
-    const now = Date.now();
-    
-    for (let i = 0; i < limit; i++) {
-      const timestamp = now - (limit - i) * 24 * 60 * 60 * 1000; // Daily candles
-      const volatility = 0.02 + Math.random() * 0.03; // 2-5% volatility
-      
-      const change = (Math.random() - 0.5) * volatility;
-      const open = currentPrice;
-      const close = currentPrice * (1 + change);
-      const high = Math.max(open, close) * (1 + Math.random() * 0.01);
-      const low = Math.min(open, close) * (1 - Math.random() * 0.01);
-      const volume = 1000000 + Math.random() * 5000000;
-      
-      data.push({
-        timestamp,
-        open,
-        high,
-        low,
-        close,
-        volume
-      });
-      
-      currentPrice = close;
-    }
-    
-    return data;
-  }
-
-  private getBasePriceForSymbol(symbol: string): number {
-    const prices: { [key: string]: number } = {
-      'BTCUSDT': 45000,
-      'ETHUSDT': 3000,
-      'ADAUSDT': 0.5,
-      'DOTUSDT': 8,
-      'LINKUSDT': 15,
-      'BNBUSDT': 300,
-      'SOLUSDT': 100,
-      'MATICUSDT': 1.2
-    };
-    
-    return prices[symbol] || 100;
   }
 }
 
