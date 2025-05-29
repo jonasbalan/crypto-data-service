@@ -1,4 +1,4 @@
-import * as Redis from 'redis';
+import Redis from 'ioredis';
 import { performance } from 'perf_hooks';
 import { getOHLCV } from './api/binance';
 
@@ -120,22 +120,16 @@ class AdvancedTechnicalIndicators {
   }
 
   private async initializeRedis() {
-    // Pular Redis se estiver em modo sem Docker
     if (process.env.SKIP_REDIS_CONNECTION === 'true' || process.env.SKIP_DATABASE_CONNECTION === 'true') {
       console.log('🚫 Redis desabilitado para indicadores avançados (modo sem Docker)');
       return;
     }
 
     try {
-      const redis = Redis.createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379'
-      });
-      
+      const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
       redis.on('error', (err: any) => {
         console.error('Redis connection error (advanced indicators):', err);
       });
-
-      await redis.connect();
       this.redis = redis;
       console.log('✅ Redis conectado para indicadores avançados');
     } catch (error) {

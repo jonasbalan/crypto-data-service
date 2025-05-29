@@ -1,4 +1,4 @@
-import * as Redis from 'redis';
+import Redis from 'ioredis';
 import os from 'os';
 import { performance } from 'perf_hooks';
 
@@ -115,22 +115,16 @@ class MetricsService {
   }
 
   private async initializeRedis() {
-    // Pular Redis se estiver em modo sem Docker
     if (process.env.SKIP_REDIS_CONNECTION === 'true' || process.env.SKIP_DATABASE_CONNECTION === 'true') {
       console.log('🚫 Redis desabilitado para métricas (modo sem Docker)');
       return;
     }
 
     try {
-      const redis = Redis.createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379'
-      });
-      
+      const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
       redis.on('error', (err: any) => {
         console.error('Redis connection error:', err);
       });
-
-      await redis.connect();
       this.redis = redis;
       console.log('✅ Redis conectado para métricas');
     } catch (error) {

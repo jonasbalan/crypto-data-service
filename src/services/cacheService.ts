@@ -17,7 +17,7 @@ export class CacheService {
 
     try {
       // Usar o nome do serviço Docker em vez do localhost
-      const redisUrl = process.env.REDIS_URL || 'redis://redis:6379';
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
       logger.info(`Conectando ao Redis em: ${redisUrl}`);
       
       this.client = new Redis(redisUrl, {

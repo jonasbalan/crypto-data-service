@@ -1,3 +1,5 @@
+import Redis from 'ioredis';
+
 export interface SentimentData {
   id: string;
   text: string;
@@ -70,7 +72,7 @@ class SentimentAnalysisService {
   private sentimentData: SentimentData[] = [];
   private trends: SentimentTrend[] = [];
   private alerts: SentimentAlert[] = [];
-  private redis?: any;
+  private redis?: Redis;
 
   private constructor() {
     this.initializeRedis();
@@ -86,24 +88,16 @@ class SentimentAnalysisService {
   }
 
   private async initializeRedis() {
-    // Pular Redis se estiver em modo sem Docker
     if (process.env.SKIP_REDIS_CONNECTION === 'true' || process.env.SKIP_DATABASE_CONNECTION === 'true') {
       console.log('🚫 Redis desabilitado para análise de sentimento (modo sem Docker)');
       return;
     }
 
     try {
-      // Usar a mesma configuração do metricsService
-      const Redis = require('redis');
-      const redis = Redis.createClient({
-        url: process.env.REDIS_URL || 'redis://localhost:6379'
-      });
-      
+      const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
       redis.on('error', (err: any) => {
         console.error('Redis connection error (sentiment):', err);
       });
-
-      await redis.connect();
       this.redis = redis;
       console.log('✅ Redis conectado para análise de sentimento');
     } catch (error) {

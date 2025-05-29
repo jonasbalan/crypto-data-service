@@ -128,7 +128,7 @@ async function initializeRedis(): Promise<void> {
   }
   
   try {
-    const redisUrl = process.env.REDIS_URL || 'redis://redis:6379';
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     logger.info(`Tentando conectar ao Redis em: ${redisUrl}`);
     
     redisClient = new Redis(redisUrl);
